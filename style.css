@@ -1,0 +1,34 @@
+.result-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 24px;
+    margin-bottom: 24px;
+}
+.result-card {
+    background: #e0f7fa;
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(25, 118, 210, 0.08);
+    padding: 32px 20px;
+    margin-bottom: 20px;
+    text-align: center;
+    min-width: 120px;
+}
+.result-icon {
+    width: 50px;
+    height: 50px;
+}
+.result-label {
+    font-size: 22px;
+    color: #1976d2;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+.result-value {
+    font-size: 20px;
+    color: #222;
+    font-weight: bold;
+}
+@media (max-width: 700px) {
+    .result-container { flex-direction: column; }
+}
