@@ -19,13 +19,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# 日時指定
-target_date = st.date_input("予測したい日付を選択", value=now.date())
-target_time = st.time_input("予測したい時刻を選択", value=now.time().replace(minute=0, second=0, microsecond=0))
-target_datetime = JST.localize(datetime.combine(target_date, target_time))
-dt_key = target_datetime.strftime('%Y-%m-%d %H:%M')
-today_key = f"{target_datetime.month:02d}-{target_datetime.day:02d}"
-
 def load_lottie(file_path):
     with open(file_path, "r", encoding="utf-8") as f:
         return json.load(f)
@@ -38,6 +31,15 @@ lottie_cloud = load_lottie("animation/cloud.json")
 
 if lottie_thermometer:
     st_lottie(lottie_thermometer, height=200)
+
+# 日時指定
+target_date = st.date_input("予測したい日付を選択", value=now.date())
+target_time = st.time_input("予測したい時刻を選択", value=now.time().replace(minute=0, second=0, microsecond=0))
+target_datetime = JST.localize(datetime.combine(target_date, target_time))
+dt_key = target_datetime.strftime('%Y-%m-%d %H:%M')
+today_key = f"{target_datetime.month:02d}-{target_datetime.day:02d}"
+
+
 
 
 # CSS適用
