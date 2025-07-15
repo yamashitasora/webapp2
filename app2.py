@@ -3,6 +3,7 @@ import json
 import os
 import pandas as pd
 from datetime import datetime, time
+from streamlit_lottie import st_lottie
 from pytz import timezone
 
 JST = timezone('Asia/Tokyo')
@@ -24,6 +25,20 @@ target_time = st.time_input("予測したい時刻を選択", value=now.time().r
 target_datetime = JST.localize(datetime.combine(target_date, target_time))
 dt_key = target_datetime.strftime('%Y-%m-%d %H:%M')
 today_key = f"{target_datetime.month:02d}-{target_datetime.day:02d}"
+
+def load_lottie(file_path):
+    with open(file_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+# アニメーション読み込み
+lottie_rain = load_lottie("animation/rain3.json")
+lottie_sun = load_lottie("animation/sun2.json")
+lottie_thermometer = load_lottie("animation/Thermometer.json")
+lottie_cloud = load_lottie("animation/cloud.json")
+
+if lottie_thermometer:
+    st_lottie(lottie_thermometer, height=200)
+
 
 # CSS適用
 def load_css(css_file):
@@ -162,6 +177,17 @@ if st.button("予測実行"):
     rank = kasa_index_rank(display_precip)
     fukusou_index = calc_fukusou_index(temp)
     hukusou = fukusou_index_comment(fukusou_index)
+
+    if display_precip >= 1:
+        st_lottie(lottie_rain, height=200)
+        st.info("雨が降る予報です☔")
+    elif predicted_values_ensemble[FEATURES.index('clouds')] >= 70:
+        st_lottie(lottie_cloud, height=200)
+        st.info("曇りの予報です⛅")
+    else:
+        st_lottie(lottie_sun, height=200)
+        st.info("晴れの予報です☀️")
+
 
     # --- HTMLでカード表示 ---
     st.markdown(f"""
