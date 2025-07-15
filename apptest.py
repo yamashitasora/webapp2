@@ -21,6 +21,7 @@ import pydeck as pdk
 import random
 from bs4 import BeautifulSoup
 import re
+import traceback
 
 LOOKBACK = 48
 PRED_STEPS = 6
@@ -42,6 +43,14 @@ def download_file(url, local_path):
         st.error(f"{os.path.basename(local_path)} のダウンロード失敗: {e}")
         st.stop()
 
+# モデルとスケーラーの保存先
+MODEL_DIR = './model'
+os.makedirs(MODEL_DIR, exist_ok=True)
+WEIGHTS_FILE = os.path.join(MODEL_DIR, 'my_weights_attention.weights.h5')
+SCALER_FILE = os.path.join(MODEL_DIR, 'scaler_attention.save')
+
+
+
 # --- 外部ストレージの直リンクに置き換えてください ---
 FEATURES = [
     'temp', 'pressure', 'humidity', 'wind', 'clouds', 'precipitation',
@@ -59,12 +68,26 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 WEIGHTS_FILE = os.path.join(MODEL_DIR, 'my_weights_attention.weights.h5')
 SCALER_FILE = os.path.join(MODEL_DIR, 'scaler_attention.save')
 
+# モデルとスケーラーのダウンロード
 download_file(MODEL_URL, WEIGHTS_FILE)
 download_file(SCALER_URL, SCALER_FILE)
+
+# 特徴量ごとにモデルファイルをダウンロード（辞書に存在するキーだけ処理）
 for f in FEATURES:
-    download_file(RF_MODEL_URLS[f], os.path.join(MODEL_DIR, f'rf_{f}.joblib'))
-    download_file(XGB_MODEL_URLS[f], os.path.join(MODEL_DIR, f'xgb_{f}.joblib'))
-    download_file(LGBM_MODEL_URLS[f], os.path.join(MODEL_DIR, f'lgbm_{f}.joblib'))
+    if f in RF_MODEL_URLS:
+        download_file(RF_MODEL_URLS[f], os.path.join(MODEL_DIR, f'rf_{f}.joblib'))
+    else:
+        st.warning(f"RFモデルが見つかりません: {f} はスキップされました。")
+
+    if f in XGB_MODEL_URLS:
+        download_file(XGB_MODEL_URLS[f], os.path.join(MODEL_DIR, f'xgb_{f}.joblib'))
+    else:
+        st.warning(f"XGBモデルが見つかりません: {f} はスキップされました。")
+
+    if f in LGBM_MODEL_URLS:
+        download_file(LGBM_MODEL_URLS[f], os.path.join(MODEL_DIR, f'lgbm_{f}.joblib'))
+    else:
+        st.warning(f"LGBMモデルが見つかりません: {f} はスキップされました。")
 
 # ========== 記念日データの読み込み ==========
 def load_anniversaries_from_csv(csv_path):
@@ -86,7 +109,7 @@ def load_anniversaries_from_csv(csv_path):
 JST = timezone('Asia/Tokyo')
 now = datetime.now(JST)
 
-ANNIV_CSV_PATH = "anniversary_365_summary.csv"
+ANNIV_CSV_PATH = "data/anniversary_365_summary.csv"
 anniversaries = load_anniversaries_from_csv(ANNIV_CSV_PATH)
 today_key = f"{now.month:02d}-{now.day:02d}"
 
@@ -134,18 +157,23 @@ try:
     model = create_attention_lstm_model()
     model.load_weights(WEIGHTS_FILE)
     scaler = joblib.load(SCALER_FILE)
+
     rf_models = []
     xgb_models = []
     lgbm_models = []
+
     for f in FEATURES:
         rf_path = os.path.join(MODEL_DIR, f'rf_{f}.joblib')
         xgb_path = os.path.join(MODEL_DIR, f'xgb_{f}.joblib')
         lgbm_path = os.path.join(MODEL_DIR, f'lgbm_{f}.joblib')
+
         rf_models.append(joblib.load(rf_path) if os.path.exists(rf_path) else None)
         xgb_models.append(joblib.load(xgb_path) if os.path.exists(xgb_path) else None)
         lgbm_models.append(joblib.load(lgbm_path) if os.path.exists(lgbm_path) else None)
+
 except Exception as e:
-    st.error(f"モデルまたはスケーラーの読み込みエラー: {e}")
+    st.error(f"モデルまたはスケーラーの読み込みエラー: {type(e).__name__}: {e}")
+    st.text(traceback.format_exc())
     st.stop()
 
 def load_lottie(file_path):
@@ -170,11 +198,6 @@ load_css(os.path.join(os.path.dirname(__file__), "style.css"))
 
 if lottie_thermometer:
     st_lottie(lottie_thermometer, height=200)
-
-def load_css(css_file):
-    with open(css_file, encoding="utf-8") as f:
-        css = f.read()
-    st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
 
 load_css(os.path.join(os.path.dirname(__file__), "style.css"))
 
@@ -201,6 +224,11 @@ def sentaku_index_comment(index):
         return "室内干しを推奨します"
     else:
         return "ほとんど乾きません"
+    
+def inverse_transform_feature(scaler, value_array, feature_index):
+    dummy = np.zeros((1, len(FEATURES)))
+    dummy[0, feature_index] = value_array[0]
+    return scaler.inverse_transform(dummy)[0, feature_index]
 
 # UI入力
 target_date = st.date_input("予測したい日付を選択")
