@@ -50,7 +50,7 @@ def load_css(css_file):
 load_css(os.path.join(os.path.dirname(__file__), "style.css"))
 
 # --- 記念日CSVの読み込みとevent_text生成 ---
-anniversary_csv = "C:/Users/ktdi104-alt/webapp/streamlit_project/data/anniversary_365_summary.csv"  # パスは適宜修正
+anniversary_csv = "data/anniversary_365_summary.csv"  # パスは適宜修正
 event_text = f"{target_datetime.month}月{target_datetime.day}日：今日は特に記念日は登録されていません。"
 if os.path.exists(anniversary_csv):
     try:
