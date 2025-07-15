@@ -34,10 +34,18 @@ if lottie_thermometer:
 
 # 日時指定
 target_date = st.date_input("予測したい日付を選択", value=now.date())
-target_time = st.time_input("予測したい時刻を選択", value=now.time().replace(minute=0, second=0, microsecond=0))
+
+# ユーザーが選んだ時刻を「分:00」に丸める
+input_time = st.time_input(
+    "予測したい時刻を選択",
+    value=now.time().replace(minute=0, second=0, microsecond=0)
+)
+# 分・秒をゼロに
+target_time = time(input_time.hour, 0, 0)
 target_datetime = JST.localize(datetime.combine(target_date, target_time))
 dt_key = target_datetime.strftime('%Y-%m-%d %H:%M')
 today_key = f"{target_datetime.month:02d}-{target_datetime.day:02d}"
+
 
 
 
